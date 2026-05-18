@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POD Design Studio</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111;
+    --surface2: #1a1a1a;
+    --border: #2a2a2a;
+    --accent: #ff4d00;
+    --accent2: #ffb800;
+    --text: #f0ece4;
+    --muted: #666;
+    --success: #00c97a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 36px;
+    display: flex;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,10,0.96);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 3px; }
+  .logo span { color: var(--accent); }
+
+  .step-bar { margin-left: auto; display: flex; gap: 7px; align-items: center; }
+  .step-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
+  .step-dot.active { background: var(--accent); transform: scale(1.5); }
+  .step-dot.done { background: var(--success); }
+
+  main { max-width: 860px; margin: 0 auto; padding: 52px 28px; }
+
+  .phase { display: none; animation: fadeUp 0.4s ease forwards; }
+  .phase.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .phase-label { font-family: 'Bebas Neue', sans-serif; font-size: 10px; letter-spacing: 4px; color: var(--accent); margin-bottom: 8px; }
+  h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(40px, 7vw, 72px); line-height: 0.93; margin-bottom: 14px; }
+  .subtitle { color: var(--muted); font-size: 14px; font-weight: 300; margin-bottom: 40px; max-width: 460px; line-height: 1.7; }
+
+  .source-toggle {
+    display: inline-flex; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 9px; padding: 3px; margin-bottom: 16px;
+  }
+  .source-btn {
+    padding: 8px 20px; border-radius: 6px; border: none; background: transparent;
+    color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.18s; display: flex; align-items: center; gap: 6px;
+  }
+  .source-btn.active { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+  .field-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; font-weight: 500; }
+
+  .url-wrap {
+    display: flex; border: 1px solid var(--border); border-radius: 9px;
+    overflow: hidden; background: var(--surface); transition: border-color 0.25s; margin-bottom: 7px;
+  }
+  .url-wrap:focus-within { border-color: var(--accent); }
+  .url-icon { padding: 0 14px; background: var(--surface2); border-right: 1px solid var(--border); display: flex; align-items: center; font-size: 16px; flex-shrink: 0; }
+  .url-wrap input {
+    flex: 1; background: transparent; border: none; padding: 14px 15px;
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; min-width: 0;
+  }
+  .url-wrap input::placeholder { color: #333; }
+  .url-eg { font-size: 11px; color: #3a3a3a; font-style: italic; margin-bottom: 28px; }
+
+  .sec-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; font-weight: 500; }
+  .type-row { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 28px; }
+  .type-chip {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 7px;
+    padding: 8px 13px; cursor: pointer; font-size: 13px; transition: all 0.15s;
+    user-select: none; display: flex; align-items: center; gap: 5px;
+  }
+  .type-chip:hover { border-color: #484848; }
+  .type-chip.selected { border-color: var(--accent); background: rgba(255,77,0,0.07); color: var(--accent); }
+
+  textarea {
+    width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+    padding: 12px 15px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13.5px;
+    outline: none; resize: vertical; min-height: 82px; line-height: 1.6;
+    transition: border-color 0.25s; margin-bottom: 28px;
+  }
+  textarea:focus { border-color: var(--accent); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 13px 28px;
+    border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13.5px;
+    font-weight: 500; cursor: pointer; border: none; transition: all 0.18s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #ff5e1a; transform: translateY(-1px); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: #505050; }
+  .btn-success { background: var(--success); color: #000; font-weight: 600; }
+  .btn-success:hover { background: #00df86; transform: translateY(-1px); }
+
+  .loading-wrap { text-align: center; padding: 72px 20px; }
+  .ring { width: 54px; height: 54px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.75s linear infinite; margin: 0 auto 22px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .load-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 3px; margin-bottom: 5px; }
+  .load-sub { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+  .prog-list { display: flex; flex-direction: column; gap: 10px; max-width: 310px; margin: 0 auto; text-align: left; }
+  .prog-item { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #3a3a3a; transition: color 0.3s; }
+  .prog-item.active { color: var(--text); }
+  .prog-item.done { color: var(--success); }
+  .prog-dot { width: 6px; height: 6px; border-radius: 50%; background: #252525; flex-shrink: 0; transition: background 0.3s; }
+  .prog-item.active .prog-dot { background: var(--accent); animation: blink 0.9s ease infinite; }
+  .prog-item.done .prog-dot { background: var(--success); }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .designs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    margin-top: 28px;
+  }
+
+  .design-card {
+    background: var(--surface); border: 2px solid var(--border); border-radius: 13px;
+    overflow: hidden; cursor: pointer; transition: all 0.22s; position: relative;
+  }
+  .design-card:hover { border-color: #555; transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+  .design-card.selected { border-color: var(--accent); }
+  .design-card.selected::after {
+    content: '✓ SELECTED';
+    position: absolute; top: 10px; right: 10px;
+    background: var(--accent); color: #fff; font-size: 9px; font-weight: 700;
+    letter-spacing: 1.5px; padding: 4px 10px; border-radius: 4px;
+  }
+
+  .design-img-wrap {
+    width: 100%; aspect-ratio: 1; background: #1a1a1a;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; position: relative;
+  }
+  .design-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .img-loading {
+    position: absolute; inset: 0; background: #151515;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  }
+  .img-spinner { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .img-loading-text { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+
+  .img-error {
+    position: absolute; inset: 0; background: rgba(255,40,40,0.05);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px;
+  }
+  .img-error-icon { font-size: 24px; }
+  .img-error-msg { font-size: 11px; color: #ff8888; text-align: center; line-height: 1.5; word-break: break-word; }
+
+  .design-label { padding: 12px 14px 14px; border-top: 1px solid var(--border); }
+  .design-num { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+  .design-name { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 0.5px; margin-bottom: 2px; }
+  .design-style { font-size: 11px; color: #666; }
+
+  .approve-bar {
+    margin-top: 24px; padding: 18px 22px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 11px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .approve-info { flex: 1; min-width: 140px; }
+  .approve-info h3 { font-family: 'Bebas Neue', sans-serif; font-size: 19px; }
+  .approve-info p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .sel-summary {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 18px; margin-bottom: 20px;
+  }
+  .sel-thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 7px; flex-shrink: 0; background: #1a1a1a; }
+  .sel-info h4 { font-family: 'Bebas Neue', sans-serif; font-size: 19px; }
+  .sel-info p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .seo-card { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 22px 24px; margin-bottom: 13px; }
+  .seo-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .seo-head h3 { font-size: 9.5px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  .copy-btn { font-size: 11px; padding: 5px 11px; border-radius: 5px; }
+  .seo-title-out { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 0.5px; line-height: 1.2; color: var(--accent2); }
+  .char-note { font-size: 11px; color: #444; margin-top: 5px; }
+  .seo-desc-out { font-size: 13px; line-height: 1.75; color: #aaa; white-space: pre-wrap; }
+  .tags-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+  .etsy-tag { background: rgba(255,184,0,0.07); border: 1px solid rgba(255,184,0,0.22); color: var(--accent2); padding: 4px 10px; border-radius: 4px; font-size: 11.5px; }
+
+  .divider { height: 1px; background: var(--border); margin: 30px 0; }
+  .actions-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .notice {
+    background: rgba(0,201,122,0.05); border: 1px solid rgba(0,201,122,0.18);
+    border-radius: 9px; padding: 14px 18px; font-size: 13px; color: var(--success); margin-bottom: 22px; line-height: 1.6;
+  }
+
+  .error-msg {
+    background: rgba(255,60,60,0.06); border: 1px solid rgba(255,60,60,0.18);
+    border-radius: 9px; padding: 15px 18px; margin-top: 16px; font-size: 13px; color: #ff8888; line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">POD <span>Studio</span></div>
+  <div class="step-bar">
+    <div class="step-dot active" id="dot-1"></div>
+    <div class="step-dot" id="dot-2"></div>
+    <div class="step-dot" id="dot-3"></div>
+    <div class="step-dot" id="dot-4"></div>
+  </div>
+</header>
+
+<main>
+
+  <!-- PHASE 1 -->
+  <div class="phase active" id="phase-1">
+    <div class="phase-label">Step 01 / 04</div>
+    <h1>Drop a Link.<br>Get 5 Designs.</h1>
+    <p class="subtitle">Paste a competitor Etsy listing or a Pinterest post. We'll generate 5 real design images for you to choose from.</p>
+
+    <div class="source-toggle">
+      <button class="source-btn active" id="btn-etsy" onclick="setSource('etsy')">🛍 Etsy Listing</button>
+      <button class="source-btn" id="btn-pinterest" onclick="setSource('pinterest')">📌 Pinterest Post</button>
+    </div>
+
+    <div class="field-label" id="url-label">Competitor Etsy listing URL</div>
+    <div class="url-wrap">
+      <div class="url-icon" id="url-icon">🛍</div>
+      <input type="url" id="inspiration-url" placeholder="https://www.etsy.com/listing/..." />
+    </div>
+    <div class="url-eg" id="url-eg">e.g. https://www.etsy.com/listing/123456789/vintage-mountain-graphic-tshirt</div>
+
+    <div class="sec-label">Product Type</div>
+    <div class="type-row">
+      <div class="type-chip selected" data-type="T-Shirt">👕 T-Shirt</div>
+      <div class="type-chip" data-type="Hoodie">🧥 Hoodie</div>
+      <div class="type-chip" data-type="Sweatshirt">👔 Sweatshirt</div>
+      <div class="type-chip" data-type="Tote Bag">👜 Tote Bag</div>
+      <div class="type-chip" data-type="Mug">☕ Mug</div>
+      <div class="type-chip" data-type="Phone Case">📱 Phone Case</div>
+      <div class="type-chip" data-type="Poster">🖼 Poster</div>
+      <div class="type-chip" data-type="Hat">🧢 Hat</div>
+    </div>
+
+    <div class="sec-label">Extra Direction <span style="color:#333;font-size:9px">(optional)</span></div>
+    <textarea id="design-notes" placeholder="e.g. Vintage feel, bold typography, earthy tones, no faces, for dog lovers…"></textarea>
+
+    <div id="err1"></div>
+    <button class="btn btn-primary" onclick="startGeneration()">✦ &nbsp;Generate 5 Designs</button>
+  </div>
+
+  <!-- PHASE 2: LOADING -->
+  <div class="phase" id="phase-2">
+    <div class="loading-wrap">
+      <div class="ring"></div>
+      <div class="load-title" id="load-title">Generating Designs</div>
+      <div class="load-sub" id="load-sub">Creating 5 real images — about 60–90 seconds</div>
+      <div class="prog-list">
+        <div class="prog-item active" id="p1"><div class="prog-dot"></div><span>Analysing inspiration URL</span></div>
+        <div class="prog-item" id="p2"><div class="prog-dot"></div><span>Building 5 design concepts</span></div>
+        <div class="prog-item" id="p3"><div class="prog-dot"></div><span>Generating images with DALL·E 3</span></div>
+        <div class="prog-item" id="p4"><div class="prog-dot"></div><span>Loading results</span></div>
+        <div class="prog-item" id="p5"><div class="prog-dot"></div><span>Done</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 3: PICK A DESIGN -->
+  <div class="phase" id="phase-3">
+    <div class="phase-label">Step 02 / 04</div>
+    <h1>Pick Your<br>Design.</h1>
+    <p class="subtitle">5 real generated designs. Tap the one you want to move forward with.</p>
+
+    <div class="designs-grid" id="designs-grid"></div>
+
+    <div class="approve-bar" id="approve-bar" style="display:none">
+      <div class="approve-info">
+        <h3 id="appr-name">—</h3>
+        <p id="appr-style">Tap a design above to select</p>
+      </div>
+      <button class="btn btn-ghost" onclick="goToPhase(1)">← Start Over</button>
+      <button class="btn btn-success" onclick="approveDesign()">Approve &amp; Write SEO →</button>
+    </div>
+
+    <div id="err3"></div>
+  </div>
+
+  <!-- PHASE 4: SEO -->
+  <div class="phase" id="phase-4">
+    <div class="phase-label">Step 03 / 04</div>
+    <h1>Etsy Listing<br>Ready.</h1>
+    <p class="subtitle">SEO-optimised title, description, and 13 tags — ready to copy or export.</p>
+
+    <div class="sel-summary" id="sel-summary"></div>
+
+    <div class="seo-card">
+      <div class="seo-head"><h3>Etsy Title</h3><button class="btn btn-ghost copy-btn" onclick="copyEl('seo-title')">Copy</button></div>
+      <div class="seo-title-out" id="seo-title"></div>
+      <div class="char-note" id="title-chars"></div>
+    </div>
+
+    <div class="seo-card">
+      <div class="seo-head"><h3>Description</h3><button class="btn btn-ghost copy-btn" onclick="copyEl('seo-desc')">Copy</button></div>
+      <div class="seo-desc-out" id="seo-desc"></div>
+    </div>
+
+    <div class="seo-card">
+      <div class="seo-head"><h3>13 Etsy Tags</h3><button class="btn btn-ghost copy-btn" onclick="copyTags()">Copy All</button></div>
+      <div class="tags-wrap" id="seo-tags"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="notice">✓ &nbsp;<strong>Step 1 complete.</strong> Next: push approved design to Printful, generate mockups, and list on Etsy.</div>
+
+    <div class="actions-row">
+      <button class="btn btn-primary" onclick="exportAll()">⬇ Export All</button>
+      <button class="btn btn-ghost" onclick="goToPhase(3)">← Change Design</button>
+      <button class="btn btn-ghost" onclick="location.reload()">↺ New Product</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const S = {
+  source: 'etsy', url: '', productType: 'T-Shirt', notes: '',
+  concepts: [], images: [], selected: null, seo: null
+};
+
+function setSource(s) {
+  S.source = s;
+  document.getElementById('btn-etsy').classList.toggle('active', s === 'etsy');
+  document.getElementById('btn-pinterest').classList.toggle('active', s === 'pinterest');
+  const inp = document.getElementById('inspiration-url');
+  if (s === 'etsy') {
+    document.getElementById('url-label').textContent = 'Competitor Etsy listing URL';
+    document.getElementById('url-icon').textContent = '🛍';
+    inp.placeholder = 'https://www.etsy.com/listing/...';
+    document.getElementById('url-eg').textContent = 'e.g. https://www.etsy.com/listing/123456789/vintage-mountain-graphic-tshirt';
+  } else {
+    document.getElementById('url-label').textContent = 'Pinterest post URL';
+    document.getElementById('url-icon').textContent = '📌';
+    inp.placeholder = 'https://www.pinterest.com/pin/...';
+    document.getElementById('url-eg').textContent = 'e.g. https://www.pinterest.com/pin/123456789012345678/';
+  }
+  inp.value = '';
+}
+
+document.querySelectorAll('.type-chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.type-chip').forEach(x => x.classList.remove('selected'));
+    c.classList.add('selected');
+    S.productType = c.dataset.type;
+  });
+});
+
+function goToPhase(n) {
+  document.querySelectorAll('.phase').forEach(p => p.classList.remove('active'));
+  document.getElementById('phase-' + n).classList.add('active');
+  document.querySelectorAll('.step-dot').forEach((d, i) => {
+    d.classList.remove('active', 'done');
+    if (i + 1 < n) d.classList.add('done');
+    if (i + 1 === n) d.classList.add('active');
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function setProgStep(n) {
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById('p' + i);
+    if (!el) continue;
+    el.classList.remove('active', 'done');
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  }
+}
+
+function showErr(id, msg) {
+  document.getElementById(id).innerHTML = `<div class="error-msg">⚠ ${msg}</div>`;
+}
+
+// Claude API
+async function callClaude(prompt) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      system: 'You are a creative POD design expert. Respond only with valid JSON, no markdown, no explanation.',
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error('Claude: ' + (e.error?.message || 'HTTP ' + r.status)); }
+  const d = await r.json();
+  return d.content[0].text;
+}
+
+// Image generation — calls our Netlify function (no CORS issues)
+async function generateImage(prompt) {
+  const r = await fetch('/api/generate-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt })
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Image generation failed');
+  return data.url;
+}
+
+async function startGeneration() {
+  const url = document.getElementById('inspiration-url').value.trim();
+  const notes = document.getElementById('design-notes').value.trim();
+  document.getElementById('err1').innerHTML = '';
+
+  if (!url) { showErr('err1', `Please paste a ${S.source === 'etsy' ? 'competitor Etsy' : 'Pinterest'} URL.`); return; }
+  if (S.source === 'etsy' && !url.includes('etsy.com')) { showErr('err1', "That doesn't look like an Etsy URL."); return; }
+  if (S.source === 'pinterest' && !url.includes('pinterest.com') && !url.includes('pin.it')) { showErr('err1', "That doesn't look like a Pinterest URL."); return; }
+
+  S.url = url; S.notes = notes;
+  goToPhase(2); setProgStep(1);
+
+  try {
+    setProgStep(2);
+    const src = S.source === 'etsy' ? 'Etsy product listing' : 'Pinterest post';
+    const conceptPrompt = `You are a creative director for a print-on-demand Etsy store.
+
+The seller found inspiration at: ${url} (this is a ${src})
+Product to design: ${S.productType}
+${notes ? `Seller notes: ${notes}` : ''}
+
+Create EXACTLY 5 completely different graphic design concepts for a ${S.productType} print.
+Each must be a totally different visual style.
+
+For each concept write a DALL-E 3 image prompt that produces a FLAT GRAPHIC ARTWORK suitable for ${S.productType} printing. The prompt MUST:
+- Describe a flat 2D graphic design or illustration only
+- Include "flat vector graphic", "white background", "no people", "print-ready artwork"
+- Be specific about colors, style, and graphic elements
+- Be 40-60 words
+
+Return ONLY a JSON array:
+[
+  {
+    "id": 1,
+    "name": "Design name (2-4 words)",
+    "style": "Style label",
+    "imagePrompt": "Full DALL-E prompt here"
+  }
+]`;
+
+    const raw = await callClaude(conceptPrompt);
+    S.concepts = JSON.parse(raw.replace(/```json|```/g, '').trim());
+
+    setProgStep(3);
+    S.images = S.concepts.map(c => ({ concept: c, imageUrl: null }));
+    renderGrid(S.images);
+    goToPhase(3);
+
+    await Promise.allSettled(
+      S.concepts.map((concept, i) =>
+        generateImage(concept.imagePrompt)
+          .then(imgUrl => { S.images[i].imageUrl = imgUrl; updateCard(i, imgUrl, null); })
+          .catch(err => { updateCard(i, null, err.message); })
+      )
+    );
+
+    setProgStep(5);
+
+  } catch (e) {
+    goToPhase(1);
+    showErr('err1', e.message);
+  }
+}
+
+function renderGrid(images) {
+  const grid = document.getElementById('designs-grid');
+  grid.innerHTML = '';
+  images.forEach((item, i) => {
+    const card = document.createElement('div');
+    card.className = 'design-card';
+    card.id = 'card-' + i;
+    card.innerHTML = `
+      <div class="design-img-wrap" id="wrap-${i}">
+        <div class="img-loading">
+          <div class="img-spinner"></div>
+          <div class="img-loading-text">Generating…</div>
+        </div>
+      </div>
+      <div class="design-label">
+        <div class="design-num">Design 0${i + 1}</div>
+        <div class="design-name">${item.concept.name}</div>
+        <div class="design-style">${item.concept.style}</div>
+      </div>`;
+    card.addEventListener('click', () => {
+      if (!S.images[i].imageUrl) return;
+      document.querySelectorAll('.design-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      S.selected = S.images[i];
+      document.getElementById('approve-bar').style.display = 'flex';
+      document.getElementById('appr-name').textContent = S.selected.concept.name;
+      document.getElementById('appr-style').textContent = S.selected.concept.style;
+    });
+    grid.appendChild(card);
+  });
+  document.getElementById('approve-bar').style.display = 'none';
+}
+
+function updateCard(i, imgUrl, errMsg) {
+  const wrap = document.getElementById('wrap-' + i);
+  if (!wrap) return;
+  if (imgUrl) {
+    wrap.innerHTML = `<img src="${imgUrl}" alt="Design ${i + 1}" />`;
+  } else {
+    wrap.innerHTML = `
+      <div class="img-error">
+        <div class="img-error-icon">⚠</div>
+        <div class="img-error-msg">${errMsg || 'Generation failed'}</div>
+      </div>`;
+  }
+}
+
+async function approveDesign() {
+  if (!S.selected) return;
+  const v = S.selected.concept;
+  goToPhase(2);
+  document.getElementById('load-title').textContent = 'Writing Your Listing';
+  document.getElementById('load-sub').textContent = 'Crafting SEO-optimised Etsy copy…';
+  setProgStep(1);
+  [0, 3000, 8000, 14000, 20000].forEach((d, i) => setTimeout(() => setProgStep(i + 1), d));
+
+  try {
+    const prompt = `You are a top Etsy SEO copywriter.
+
+Write a complete Etsy listing for:
+Product: ${S.productType}
+Design: ${v.name} — ${v.style} style
+${S.notes ? `Seller notes: ${S.notes}` : ''}
+
+Rules:
+- Title: max 140 chars, keywords first, no ALL CAPS
+- Description: 300-400 words, emotional, benefit-led, natural keywords, care placeholder, CTA at end
+- Tags: exactly 13, each max 20 chars, real Etsy search terms
+
+Return ONLY valid JSON:
+{"title":"...","description":"...","tags":["t1","t2","t3","t4","t5","t6","t7","t8","t9","t10","t11","t12","t13"]}`;
+
+    const raw = await callClaude(prompt);
+    S.seo = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    renderSEO(S.seo, v);
+    goToPhase(4);
+  } catch (e) {
+    goToPhase(3);
+    showErr('err3', 'SEO generation failed: ' + e.message);
+  }
+}
+
+function renderSEO(seo, v) {
+  const thumb = S.selected?.imageUrl;
+  document.getElementById('sel-summary').innerHTML = `
+    ${thumb ? `<img class="sel-thumb" src="${thumb}" alt="${v.name}" />` : '<div class="sel-thumb"></div>'}
+    <div class="sel-info"><h4>${v.name}</h4><p>${v.style} · ${S.productType}</p></div>`;
+  document.getElementById('seo-title').textContent = seo.title;
+  document.getElementById('title-chars').textContent = `${seo.title.length} / 140 characters`;
+  document.getElementById('seo-desc').textContent = seo.description;
+  const wrap = document.getElementById('seo-tags');
+  wrap.innerHTML = '';
+  seo.tags.forEach(t => {
+    const s = document.createElement('span'); s.className = 'etsy-tag'; s.textContent = t; wrap.appendChild(s);
+  });
+}
+
+function exportAll() {
+  const v = S.selected?.concept; const seo = S.seo;
+  if (!v || !seo) return;
+  const txt = `POD STUDIO EXPORT — ${new Date().toLocaleString()}
+SOURCE: ${S.url}
+PRODUCT: ${S.productType}
+
+DESIGN: ${v.name} (${v.style})
+Image URL: ${S.selected?.imageUrl || 'N/A'}
+Image Prompt: ${v.imagePrompt}
+
+TITLE:
+${seo.title}
+
+DESCRIPTION:
+${seo.description}
+
+TAGS:
+${seo.tags.join(', ')}`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain' }));
+  a.download = `pod-studio-${v.name.toLowerCase().replace(/\s+/g, '-')}.txt`;
+  a.click();
+}
+
+function copyEl(id) {
+  navigator.clipboard.writeText(document.getElementById(id).textContent).then(() => {
+    const btn = event.target; const orig = btn.textContent;
+    btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = orig, 1800);
+  });
+}
+
+function copyTags() {
+  navigator.clipboard.writeText((S.seo?.tags || []).join(', ')).then(() => {
+    const btn = event.target; btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy All', 1800);
+  });
+}
+</script>
+</body>
+</html>
