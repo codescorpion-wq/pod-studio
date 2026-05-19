@@ -1,53 +1,94 @@
-exports.handler = async function (event) {
-  // Only allow POST
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+export default async (req) => {
+  if (req.method !== 'POST') {
+    return new Response('Method Not Allowed', { status: 405 });
   }
 
   try {
-    const { prompt } = JSON.parse(event.body);
+    const body = await req.json();
+    const { action, prompt } = body;
 
-    if (!prompt) {
-      return { statusCode: 400, body: JSON.stringify({ error: 'No prompt provided' }) };
+    // ── Claude: generate concepts or SEO ──────────────────
+    if (action === 'concepts' || action === 'seo') {
+      const systemPrompt = action === 'seo'
+        ? 'You are a top Etsy SEO copywriter. Respond only with valid JSON, no markdown, no explanation.'
+        : 'You are a creative POD design expert. Respond only with valid JSON, no markdown, no explanation.';
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': Netlify.env.get('ANTHROPIC_API_KEY'),
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return new Response(JSON.stringify({ error: data.error?.message || 'Claude error' }), {
+          status: response.status,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      return new Response(JSON.stringify({ text: data.content[0].text }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt: prompt,
-        n: 1,
-        size: '1024x1024',
-        quality: 'standard',
-        response_format: 'url'
-      })
+    // ── DALL-E 3: generate image ───────────────────────────
+    if (action === 'image') {
+      const response = await fetch('https://api.openai.com/v1/images/generations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Netlify.env.get('OPENAI_API_KEY')}`
+        },
+        body: JSON.stringify({
+          model: 'dall-e-3',
+          prompt: prompt,
+          n: 1,
+          size: '1024x1024',
+          quality: 'standard',
+          response_format: 'url'
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return new Response(JSON.stringify({ error: data.error?.message || 'OpenAI error' }), {
+          status: response.status,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      return new Response(JSON.stringify({ url: data.data[0].url }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(JSON.stringify({ error: 'Unknown action' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        statusCode: response.status,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: data.error?.message || 'OpenAI error' })
-      };
-    }
-
-    return {
-      statusCode: 200,
-      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: data.data[0].url })
-    };
-
   } catch (err) {
-    return {
-      statusCode: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: err.message })
-    };
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
+};
+
+export const config = {
+  path: '/api/generate-image'
 };
