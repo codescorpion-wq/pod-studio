@@ -421,7 +421,7 @@ async function callClaude(prompt) {
 
 // Image generation — calls our Netlify function (no CORS issues)
 async function generateImage(prompt) {
-  const r = await fetch('/api/generate-image', {
+  const r = await fetch('/.netlify/functions/generate-image', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt })
