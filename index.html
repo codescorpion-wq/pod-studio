@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -350,6 +351,18 @@ const S = {
   concepts: [], images: [], selected: null, seo: null
 };
 
+// ── All API calls go through our Netlify function ──────────
+async function api(action, prompt) {
+  const r = await fetch('/api/generate-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, prompt })
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
 function setSource(s) {
   S.source = s;
   document.getElementById('btn-etsy').classList.toggle('active', s === 'etsy');
@@ -402,35 +415,6 @@ function showErr(id, msg) {
   document.getElementById(id).innerHTML = `<div class="error-msg">⚠ ${msg}</div>`;
 }
 
-// Claude API
-async function callClaude(prompt) {
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      system: 'You are a creative POD design expert. Respond only with valid JSON, no markdown, no explanation.',
-      messages: [{ role: 'user', content: prompt }]
-    })
-  });
-  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error('Claude: ' + (e.error?.message || 'HTTP ' + r.status)); }
-  const d = await r.json();
-  return d.content[0].text;
-}
-
-// Image generation — calls our Netlify function (no CORS issues)
-async function generateImage(prompt) {
-  const r = await fetch('/.netlify/functions/generate-image', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt })
-  });
-  const data = await r.json();
-  if (!r.ok) throw new Error(data.error || 'Image generation failed');
-  return data.url;
-}
-
 async function startGeneration() {
   const url = document.getElementById('inspiration-url').value.trim();
   const notes = document.getElementById('design-notes').value.trim();
@@ -444,6 +428,7 @@ async function startGeneration() {
   goToPhase(2); setProgStep(1);
 
   try {
+    // Step 1: Claude builds design concepts
     setProgStep(2);
     const src = S.source === 'etsy' ? 'Etsy product listing' : 'Pinterest post';
     const conceptPrompt = `You are a creative director for a print-on-demand Etsy store.
@@ -471,18 +456,20 @@ Return ONLY a JSON array:
   }
 ]`;
 
-    const raw = await callClaude(conceptPrompt);
-    S.concepts = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    const conceptResult = await api('concepts', conceptPrompt);
+    S.concepts = JSON.parse(conceptResult.text.replace(/```json|```/g, '').trim());
 
+    // Step 2: Show grid with spinners, switch to phase 3
     setProgStep(3);
     S.images = S.concepts.map(c => ({ concept: c, imageUrl: null }));
     renderGrid(S.images);
     goToPhase(3);
 
+    // Step 3: Generate all 5 images in parallel
     await Promise.allSettled(
       S.concepts.map((concept, i) =>
-        generateImage(concept.imagePrompt)
-          .then(imgUrl => { S.images[i].imageUrl = imgUrl; updateCard(i, imgUrl, null); })
+        api('image', concept.imagePrompt)
+          .then(data => { S.images[i].imageUrl = data.url; updateCard(i, data.url, null); })
           .catch(err => { updateCard(i, null, err.message); })
       )
     );
@@ -552,9 +539,7 @@ async function approveDesign() {
   [0, 3000, 8000, 14000, 20000].forEach((d, i) => setTimeout(() => setProgStep(i + 1), d));
 
   try {
-    const prompt = `You are a top Etsy SEO copywriter.
-
-Write a complete Etsy listing for:
+    const seoPrompt = `Write a complete Etsy listing for:
 Product: ${S.productType}
 Design: ${v.name} — ${v.style} style
 ${S.notes ? `Seller notes: ${S.notes}` : ''}
@@ -567,8 +552,8 @@ Rules:
 Return ONLY valid JSON:
 {"title":"...","description":"...","tags":["t1","t2","t3","t4","t5","t6","t7","t8","t9","t10","t11","t12","t13"]}`;
 
-    const raw = await callClaude(prompt);
-    S.seo = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    const result = await api('seo', seoPrompt);
+    S.seo = JSON.parse(result.text.replace(/```json|```/g, '').trim());
     renderSEO(S.seo, v);
     goToPhase(4);
   } catch (e) {
