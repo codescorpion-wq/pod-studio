@@ -353,7 +353,7 @@ const S = {
 
 // ── All API calls go through our Netlify function ──────────
 async function api(action, prompt) {
-  const r = await fetch('/.netlify/functions/generate-image', {
+  const r = await fetch('/api/generate-image', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, prompt })
