@@ -7,7 +7,6 @@ export default async (req) => {
     const body = await req.json();
     const { action, prompt } = body;
 
-    // ── Claude: generate concepts or SEO ──────────────────
     if (action === 'concepts' || action === 'seo') {
       const systemPrompt = action === 'seo'
         ? 'You are a top Etsy SEO copywriter. Respond only with valid JSON, no markdown, no explanation.'
@@ -43,7 +42,6 @@ export default async (req) => {
       });
     }
 
-    // ── DALL-E 3: generate image ───────────────────────────
     if (action === 'image') {
       const response = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
